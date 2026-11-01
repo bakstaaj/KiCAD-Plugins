@@ -85,8 +85,8 @@ New-Item -ItemType Directory -Path $pythonDir -Force | Out-Null
 Expand-Archive -LiteralPath $pythonArchive -DestinationPath $pythonDir -Force
 $PythonExe = Join-Path $pythonDir 'python.exe'
 if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) { throw 'The bundled Python runtime did not extract correctly.' }
-$pythonVersion = & $PythonExe -c 'import sys; print("%d.%d" % sys.version_info[:2])'
-if ($LASTEXITCODE -ne 0 -or [version]$pythonVersion -lt [version]'3.10') { throw 'The bundled Python runtime failed its version check.' }
+$pythonVersion = & $PythonExe -c 'import sys; print(sys.version_info[0] * 100 + sys.version_info[1])'
+if ($LASTEXITCODE -ne 0 -or [int]$pythonVersion -lt 310) { throw 'The bundled Python runtime failed its version check.' }
 Copy-Item -LiteralPath $serverSource -Destination (Join-Path $InstallRoot 'server.py') -Force
 Copy-Item -LiteralPath $nssmSource -Destination (Join-Path $InstallRoot 'nssm.exe') -Force
 Copy-Item -Path (Join-Path $distSource '*') -Destination (Join-Path $InstallRoot 'dist') -Recurse -Force
