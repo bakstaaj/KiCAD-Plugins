@@ -74,36 +74,46 @@ export function createStencilDxf(svgRoot, side, boardSize = {}) {
 }
 
 function expandUseGeometry(group, svgRoot) {
-  const svgNamespace = "http://www.w3.org/2000/svg";
   const useElements = Array.from(group.querySelectorAll("use"));
 
   useElements.forEach((useElement) => {
-    const href = useElement.getAttribute("href") ||
-      useElement.getAttributeNS("http://www.w3.org/1999/xlink", "href");
-    if (!href || !href.startsWith("#")) return;
-
-    const referencedId = href.slice(1);
-    const referencedElement = Array.from(svgRoot.querySelectorAll("[id]"))
-      .find((element) => element.id === referencedId);
-    if (!referencedElement) return;
-
-    const instance = document.createElementNS(svgNamespace, "g");
-    const transforms = [];
-    if (useElement.hasAttribute("transform")) {
-      transforms.push(useElement.getAttribute("transform"));
-    }
-    const x = Number(useElement.getAttribute("x") || 0);
-    const y = Number(useElement.getAttribute("y") || 0);
-    if (x || y) transforms.push("translate(" + x + " " + y + ")");
-    if (transforms.length) instance.setAttribute("transform", transforms.join(" "));
-
-    const clone = referencedElement.cloneNode(true);
-    clone.removeAttribute("id");
-    instance.appendChild(clone);
-    useElement.parentNode.appendChild(instance);
+    expandUseElement(useElement, svgRoot, 0);
   });
 
   return Array.from(group.querySelectorAll("path"));
+}
+
+function expandUseElement(useElement, svgRoot, depth) {
+  if (depth >= 16 || !useElement.parentNode) return;
+
+  const href = useElement.getAttribute("href") ||
+    useElement.getAttribute("xlink:href") ||
+    useElement.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+  if (!href || !href.startsWith("#")) return;
+
+  const referencedId = href.slice(1);
+  const referencedElement = Array.from(svgRoot.querySelectorAll("[id]"))
+    .find((element) => element.id === referencedId);
+  if (!referencedElement) return;
+
+  const instance = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  const transforms = [];
+  if (useElement.hasAttribute("transform")) {
+    transforms.push(useElement.getAttribute("transform"));
+  }
+  const x = Number(useElement.getAttribute("x") || 0);
+  const y = Number(useElement.getAttribute("y") || 0);
+  if (x || y) transforms.push("translate(" + x + " " + y + ")");
+  if (transforms.length) instance.setAttribute("transform", transforms.join(" "));
+
+  const clone = referencedElement.cloneNode(true);
+  clone.removeAttribute("id");
+  instance.appendChild(clone);
+  useElement.parentNode.replaceChild(instance, useElement);
+
+  Array.from(instance.querySelectorAll("use")).forEach((nestedUse) => {
+    expandUseElement(nestedUse, svgRoot, depth + 1);
+  });
 }
 
 function forceVisible(element) {

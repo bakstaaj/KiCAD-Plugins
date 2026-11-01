@@ -48,7 +48,8 @@ class Gerber2PngProcess:
         popt.SetDrillMarksType(0)  # NO_DRILL_SHAPE
 
         for layer_info in plotPlan:
-            if self.board.IsLayerEnabled(layer_info[1]):
+            is_paste_layer = layer_info[1] in (pcbnew.F_Paste, pcbnew.B_Paste)
+            if is_paste_layer or self.board.IsLayerEnabled(layer_info[1]):
                 self.pctl.SetLayer(layer_info[1])
                 self.pctl.OpenPlotfile(
                     layer_info[0],
