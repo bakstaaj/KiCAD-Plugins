@@ -7,6 +7,8 @@
 
 This installs the `Gerber2PNGLocalServer` Windows service and the modified Gerber2PNG PCB Editor action plugin. The service starts automatically and listens only on the local computer at port 4172. Logs are in `C:\Program Files\Gerber2PNG Local Server\logs`.
 
+After loading Gerber files, use **Stencil DXF** in the output panel to export the top or bottom solder-paste apertures together with the board edge. The DXF uses millimeters and separates the geometry onto `STENCIL_APERTURES` and `BOARD_EDGE` layers.
+
 Run `Uninstall-Gerber2PNG-Local.cmd` to remove the service. It asks before deleting the plugin and service files; timestamped backups of any previous plugin installation are kept.
 
 If installation reports that port 4172 is in use, close the other program using that port and run the installer again. See the service error log if Windows reports that the service failed to start.

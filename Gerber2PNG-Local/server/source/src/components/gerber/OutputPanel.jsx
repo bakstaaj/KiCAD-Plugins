@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRightEndOnRectangleIcon,
+  ArrowDownTrayIcon,
   FolderArrowDownIcon,
   Squares2X2Icon,
   TrashIcon,
@@ -13,15 +14,18 @@ import BulkLayoutPanel from "./multiLayout/Panel";
 import { useApp } from "../context/AppContext";
 import ModsPanel from "./modsPanel/Panel";
 import mods from './../../assets/favicon.ico'
-import { useGerberSettings } from "../context/GerberContext";
+import { useGerberLayer, useGerberSettings } from "../context/GerberContext";
 import { addTabsToOutlinePng } from "../../utils/svgConverter/svg2png";
 import OutlineTabsModal from "./OutlineTabsModal";
 import PngPreviewModal from "./PngPreviewModal";
 import LightBurnExportModal from "./LightBurnExportModal";
+import { createStencilDxf } from "../../utils/dxf/stencilDxf";
+import toast from "react-hot-toast";
 
 const OutputPanel = () => {
   const { pngFiles, setPngFiles, outlineTabPreset, setOutlineTabPreset } = useApp();
-  const { doubleSide, outlineToolWidth } = useGerberSettings();
+  const { doubleSide, outlineToolWidth, stackConfig } = useGerberSettings();
+  const { topstack, bottomstack } = useGerberLayer();
 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showModsPanel, setShowModsPanel] = useState(false);
@@ -31,6 +35,24 @@ const OutputPanel = () => {
   const [tabEditorPng, setTabEditorPng] = useState(null);
   const [previewPng, setPreviewPng] = useState(null);
   const [lightBurnPng, setLightBurnPng] = useState(null);
+  const [showStencilModal, setShowStencilModal] = useState(false);
+
+  const exportStencilDxf = (side) => {
+    const stack = side === "top" ? topstack : bottomstack;
+    try {
+      const dxf = createStencilDxf(stack?.svg, side, stackConfig);
+      const blob = new Blob([dxf], { type: "application/dxf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${stack?.id || "board"}_${side}-solder-stencil.dxf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setShowStencilModal(false);
+    } catch (error) {
+      toast.error(error.message || "Could not generate stencil DXF.");
+    }
+  };
 
   const hasFiles = pngFiles.length > 0;
 
@@ -297,6 +319,20 @@ const OutputPanel = () => {
                 <Squares2X2Icon width={14} />
                 Layout
               </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                disabled={!topstack?.svg || !bottomstack?.svg}
+                onClick={() => setShowStencilModal(true)}
+                title="Export solder-paste apertures and board edge as DXF"
+                className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition ${
+                  topstack?.svg && bottomstack?.svg
+                    ? "text-gray-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                    : "text-gray-400 cursor-not-allowed dark:text-slate-500"
+                }`}
+              >
+                <ArrowDownTrayIcon width={14} />
+                Stencil DXF
+              </motion.button>
             </div>
 
             {/* DELETE */}
@@ -383,6 +419,34 @@ const OutputPanel = () => {
       </div>
 
       {/* DELETE MODAL */}
+      <AnimatePresence>
+        {showStencilModal && (
+          <motion.div
+            className="fixed inset-0 bg-black/30 backdrop-blur-[2px] flex items-center justify-center z-50 dark:bg-slate-950/70"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowStencilModal(false)}
+          >
+            <motion.div
+              className="bg-white rounded-xl p-5 w-[340px] space-y-4 shadow-xl dark:bg-slate-900 dark:border dark:border-slate-800"
+              initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.94, opacity: 0 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div>
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Export solder stencil DXF</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Choose the board side. The file contains solder-paste apertures and the board edge in millimeters.</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => exportStencilDxf("top")} className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Top side</button>
+                <button onClick={() => exportStencilDxf("bottom")} className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Bottom side</button>
+              </div>
+              <div className="flex justify-end">
+                <button onClick={() => setShowStencilModal(false)} className="px-3 py-1.5 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
