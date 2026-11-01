@@ -25,9 +25,7 @@ export function createStencilDxf(svgRoot, side, boardSize = {}) {
     const groupSelector = 'g[id*="' + side + '_solderpaste"]';
     const pasteGroups = Array.from(workingRoot.querySelectorAll(groupSelector));
     pasteGroups.forEach(forceVisible);
-    const pastePaths = pasteGroups.flatMap((group) =>
-      Array.from(group.querySelectorAll("path"))
-    );
+    const pastePaths = pasteGroups.flatMap((group) => expandUseGeometry(group, workingRoot));
     const outlinePath = workingRoot.querySelector("#drillMask path");
     if (outlinePath) forceVisible(outlinePath);
     if (!pastePaths.length) {
@@ -73,6 +71,39 @@ export function createStencilDxf(svgRoot, side, boardSize = {}) {
   } finally {
     sandbox.remove();
   }
+}
+
+function expandUseGeometry(group, svgRoot) {
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const useElements = Array.from(group.querySelectorAll("use"));
+
+  useElements.forEach((useElement) => {
+    const href = useElement.getAttribute("href") ||
+      useElement.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+    if (!href || !href.startsWith("#")) return;
+
+    const referencedId = href.slice(1);
+    const referencedElement = Array.from(svgRoot.querySelectorAll("[id]"))
+      .find((element) => element.id === referencedId);
+    if (!referencedElement) return;
+
+    const instance = document.createElementNS(svgNamespace, "g");
+    const transforms = [];
+    if (useElement.hasAttribute("transform")) {
+      transforms.push(useElement.getAttribute("transform"));
+    }
+    const x = Number(useElement.getAttribute("x") || 0);
+    const y = Number(useElement.getAttribute("y") || 0);
+    if (x || y) transforms.push("translate(" + x + " " + y + ")");
+    if (transforms.length) instance.setAttribute("transform", transforms.join(" "));
+
+    const clone = referencedElement.cloneNode(true);
+    clone.removeAttribute("id");
+    instance.appendChild(clone);
+    useElement.parentNode.appendChild(instance);
+  });
+
+  return Array.from(group.querySelectorAll("path"));
 }
 
 function forceVisible(element) {
