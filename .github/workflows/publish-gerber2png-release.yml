@@ -15,11 +15,10 @@ jobs:
       - name: Check out tagged source
         uses: actions/checkout@v4
 
-      - name: Create release and upload installer
+      - name: Upload installer to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
+          gh release upload "${GITHUB_REF_NAME}" \
             "Gerber2PNG-Local/release/Gerber2PNG-Local-v1.0.0-Windows.zip" \
-            --title "Gerber2PNG Local for KiCad v1.0.0" \
-            --notes "Windows installer for the modified KiCad plugin and local Gerber2PNG service. Extract the ZIP, run Install-Gerber2PNG-Local.cmd as administrator, select the KiCad plugins folder and Python 3.10+ executable, then restart KiCad."
+            --clobber
