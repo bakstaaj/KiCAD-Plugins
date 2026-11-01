@@ -80,6 +80,7 @@ function expandUseGeometry(group, svgRoot) {
     expandUseElement(useElement, svgRoot, 0);
   });
 
+  normalizeSvgShapes(group);
   return Array.from(group.querySelectorAll("path"));
 }
 
@@ -108,12 +109,141 @@ function expandUseElement(useElement, svgRoot, depth) {
 
   const clone = referencedElement.cloneNode(true);
   clone.removeAttribute("id");
-  instance.appendChild(clone);
+
+  const roundedRect = getRoundedRectMacroPath(clone);
+  if (roundedRect) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    Array.from(clone.attributes).forEach(({ name, value }) => {
+      if (name !== "id") path.setAttribute(name, value);
+    });
+    path.setAttribute("d", roundedRect);
+    instance.appendChild(path);
+  } else {
+    instance.appendChild(clone);
+  }
   useElement.parentNode.replaceChild(instance, useElement);
 
   Array.from(instance.querySelectorAll("use")).forEach((nestedUse) => {
     expandUseElement(nestedUse, svgRoot, depth + 1);
   });
+}
+
+function normalizeSvgShapes(container) {
+  const shapes = Array.from(
+    container.querySelectorAll("rect,circle,ellipse,polygon,polyline,line")
+  );
+
+  shapes.forEach((shape) => {
+    const d = shapeToPath(shape);
+    if (!d) return;
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const geometryAttributes = new Set([
+      "x", "y", "width", "height", "rx", "ry", "cx", "cy", "r",
+      "points", "x1", "x2", "y1", "y2", "id",
+    ]);
+    Array.from(shape.attributes).forEach(({ name, value }) => {
+      if (!geometryAttributes.has(name)) path.setAttribute(name, value);
+    });
+    path.setAttribute("d", d);
+    shape.parentNode.replaceChild(path, shape);
+  });
+}
+
+function getRoundedRectMacroPath(element) {
+  if (element.tagName?.toLowerCase() !== "g") return null;
+
+  const circles = Array.from(element.querySelectorAll("circle")).map((circle) => ({
+    x: Number(circle.getAttribute("cx") || 0),
+    y: Number(circle.getAttribute("cy") || 0),
+    r: Number(circle.getAttribute("r") || 0),
+  }));
+  if (circles.length !== 4 || circles.some(({ r }) => !(r > 0))) return null;
+  if (circles.some(({ r }) => Math.abs(r - circles[0].r) > 0.00001)) return null;
+
+  const unique = (values) => [...new Set(values.map((value) => Number(value.toFixed(5))))];
+  const xs = unique(circles.map(({ x }) => x));
+  const ys = unique(circles.map(({ y }) => y));
+  if (xs.length !== 2 || ys.length !== 2) return null;
+  if (new Set(circles.map(({ x, y }) => x + "," + y)).size !== 4) return null;
+
+  const radius = circles[0].r;
+  const minX = Math.min(...circles.map(({ x }) => x - radius));
+  const maxX = Math.max(...circles.map(({ x }) => x + radius));
+  const minY = Math.min(...circles.map(({ y }) => y - radius));
+  const maxY = Math.max(...circles.map(({ y }) => y + radius));
+  return roundedRectanglePath(minX, minY, maxX - minX, maxY - minY, radius, radius);
+}
+
+function shapeToPath(shape) {
+  const number = (attribute) => Number(shape.getAttribute(attribute) || 0);
+  const type = shape.tagName.toLowerCase();
+
+  if (type === "rect") {
+    const x = number("x");
+    const y = number("y");
+    const width = number("width");
+    const height = number("height");
+    if (!(width > 0) || !(height > 0)) return null;
+    const rawRx = shape.hasAttribute("rx") ? number("rx") : number("ry");
+    const rawRy = shape.hasAttribute("ry") ? number("ry") : number("rx");
+    return roundedRectanglePath(
+      x, y, width, height,
+      Math.min(rawRx, width / 2),
+      Math.min(rawRy, height / 2)
+    );
+  }
+
+  if (type === "circle" || type === "ellipse") {
+    const cx = number("cx");
+    const cy = number("cy");
+    const rx = type === "circle" ? number("r") : number("rx");
+    const ry = type === "circle" ? rx : number("ry");
+    if (!(rx > 0) || !(ry > 0)) return null;
+    return [
+      "M", cx - rx, cy,
+      "A", rx, ry, 0, 1, 0, cx + rx, cy,
+      "A", rx, ry, 0, 1, 0, cx - rx, cy,
+      "Z",
+    ].join(" ");
+  }
+
+  if (type === "polygon" || type === "polyline") {
+    const points = (shape.getAttribute("points") || "")
+      .match(/[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g)
+      ?.map(Number) || [];
+    if (points.length < 4 || points.length % 2 !== 0) return null;
+    const d = ["M", points[0], points[1]];
+    for (let index = 2; index < points.length; index += 2) {
+      d.push("L", points[index], points[index + 1]);
+    }
+    if (type === "polygon") d.push("Z");
+    return d.join(" ");
+  }
+
+  if (type === "line") {
+    return ["M", number("x1"), number("y1"), "L", number("x2"), number("y2")].join(" ");
+  }
+
+  return null;
+}
+
+function roundedRectanglePath(x, y, width, height, rx, ry) {
+  if (!(rx > 0) || !(ry > 0)) {
+    return ["M", x, y, "H", x + width, "V", y + height, "H", x, "Z"].join(" ");
+  }
+  return [
+    "M", x + rx, y,
+    "H", x + width - rx,
+    "A", rx, ry, 0, 0, 1, x + width, y + ry,
+    "V", y + height - ry,
+    "A", rx, ry, 0, 0, 1, x + width - rx, y + height,
+    "H", x + rx,
+    "A", rx, ry, 0, 0, 1, x, y + height - ry,
+    "V", y + ry,
+    "A", rx, ry, 0, 0, 1, x + rx, y,
+    "Z",
+  ].join(" ");
 }
 
 function forceVisible(element) {
