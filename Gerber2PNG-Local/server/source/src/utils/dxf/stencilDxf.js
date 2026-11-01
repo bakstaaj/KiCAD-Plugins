@@ -373,6 +373,16 @@ function appendPolyline(lines, layer, contour) {
   const points = removeDuplicatePoints(contour.points);
   if (points.length < 3) return;
 
+  // Some CAM importers ignore the LWPOLYLINE closed bit (70=1). Include the
+  // first vertex again so the final segment is explicit in those programs.
+  if (contour.closed) {
+    const first = points[0];
+    const last = points[points.length - 1];
+    if (Math.hypot(first[0] - last[0], first[1] - last[1]) > 0.00001) {
+      points.push([...first]);
+    }
+  }
+
   lines.push(
     "0", "LWPOLYLINE",
     "100", "AcDbEntity",
