@@ -104,11 +104,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $InstallRoot 'environment-backup.jso
 
 $nssm = Join-Path $InstallRoot 'nssm.exe'
 $serverScript = Join-Path $InstallRoot 'server.py'
-& $nssm install $ServiceName $PythonExe
+$quotedServerScript = '"""' + $serverScript + '"""'
+& $nssm install $ServiceName $PythonExe $quotedServerScript
 if ($LASTEXITCODE -ne 0) { throw 'NSSM could not register the local service.' }
-$serviceParameters = "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName\Parameters"
-New-Item -Path $serviceParameters -Force | Out-Null
-New-ItemProperty -LiteralPath $serviceParameters -Name AppParameters -Value ('"' + $serverScript + '"') -PropertyType String -Force | Out-Null
 & $nssm set $ServiceName AppDirectory $InstallRoot
 & $nssm set $ServiceName Start SERVICE_AUTO_START
 & $nssm set $ServiceName AppEnvironmentExtra "GERBER2PNG_SERVER_ROOT=$InstallRoot" "GERBER2PNG_PYTHON=$PythonExe" "PATH=$pythonDir;$env:SystemRoot\System32;$env:SystemRoot"
