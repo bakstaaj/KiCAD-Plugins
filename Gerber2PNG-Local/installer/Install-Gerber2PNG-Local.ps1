@@ -103,8 +103,12 @@ if (-not (Test-Path -LiteralPath (Join-Path $InstallRoot 'environment-backup.jso
 [Environment]::SetEnvironmentVariable('GERBER2PNG_PYTHON', $PythonExe, 'Machine')
 
 $nssm = Join-Path $InstallRoot 'nssm.exe'
-& $nssm install $ServiceName $PythonExe (Join-Path $InstallRoot 'server.py')
+$serverScript = Join-Path $InstallRoot 'server.py'
+& $nssm install $ServiceName $PythonExe
 if ($LASTEXITCODE -ne 0) { throw 'NSSM could not register the local service.' }
+$serviceParameters = "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName\Parameters"
+New-Item -Path $serviceParameters -Force | Out-Null
+New-ItemProperty -LiteralPath $serviceParameters -Name AppParameters -Value ('"' + $serverScript + '"') -PropertyType String -Force | Out-Null
 & $nssm set $ServiceName AppDirectory $InstallRoot
 & $nssm set $ServiceName Start SERVICE_AUTO_START
 & $nssm set $ServiceName AppEnvironmentExtra "GERBER2PNG_SERVER_ROOT=$InstallRoot" "GERBER2PNG_PYTHON=$PythonExe" "PATH=$pythonDir;$env:SystemRoot\System32;$env:SystemRoot"
@@ -115,7 +119,7 @@ if ($LASTEXITCODE -ne 0) { throw 'NSSM could not register the local service.' }
 & $nssm set $ServiceName AppRotateBytes 1048576
 & $nssm set $ServiceName AppExit Default Restart
 & $nssm start $ServiceName
-if ($LASTEXITCODE -ne 0) { throw 'The Gerber2PNG service did not start. See service-error.log.' }
+$nssmStartExitCode = $LASTEXITCODE
 
 $deadline = (Get-Date).AddSeconds(20)
 $ready = $false
@@ -125,7 +129,12 @@ while ((Get-Date) -lt $deadline) {
         if ($response.StatusCode -eq 200) { $ready = $true; break }
     } catch { Start-Sleep -Milliseconds 500 }
 }
-if (-not $ready) { throw "Service installed but did not answer on port 4172. Check $InstallRoot\logs\service-error.log." }
+if (-not $ready) {
+    $serviceState = (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue).Status
+    $errorLog = Join-Path $InstallRoot 'logs\service-error.log'
+    $logDetails = if (Test-Path -LiteralPath $errorLog) { (Get-Content -LiteralPath $errorLog -Tail 20 | Out-String).Trim() } else { 'No service error log was created.' }
+    throw ("Gerber2PNG service did not answer on port 4172 within 20 seconds (service state: $serviceState, NSSM start result: $nssmStartExitCode). Log: $errorLog" + [Environment]::NewLine + $logDetails)
+}
 
 Write-Host "Gerber2PNG local service installed and listening at http://127.0.0.1:4172/" -ForegroundColor Green
 Write-Host "KiCad plugin installed to $PluginDirectory\$PluginFolderName"
