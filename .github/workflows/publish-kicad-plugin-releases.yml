@@ -23,17 +23,17 @@ jobs:
         run: |
           case "$TAG" in
             kicad-cnc-gcode-v*)
-              ASSET="KiCad-CNC-GCode/release/KiCad-CNC-GCode-${TAG#kicad-cnc-gcode-v}.zip"
+              ASSET="KiCad-CNC-GCode/release/KiCad-CNC-GCode-v${TAG#kicad-cnc-gcode-v}.zip"
               TITLE="KiCad CNC G-code Tools ${TAG#kicad-cnc-gcode-v}"
               NOTES="Standalone package for the KiCad PCB Editor Drill to G-code and Edge Cuts to G-code actions. See the repository's KiCad-CNC-GCode/README.md for installation instructions."
               ;;
             kicad-move-selection-center-v*)
-              ASSET="KiCad-Move-Selection-Center/release/KiCad-Move-Selection-Center-${TAG#kicad-move-selection-center-v}.zip"
+              ASSET="KiCad-Move-Selection-Center/release/KiCad-Move-Selection-Center-v${TAG#kicad-move-selection-center-v}.zip"
               TITLE="Move Selection Center to X/Y ${TAG#kicad-move-selection-center-v}"
               NOTES="Standalone KiCad PCB Editor action plugin. See the repository's KiCad-Move-Selection-Center/README.md for installation instructions."
               ;;
             kicad-git-integration-v*)
-              ASSET="KiCad-Git-Integration/release/KiCad-Git-Integration-${TAG#kicad-git-integration-v}.zip"
+              ASSET="KiCad-Git-Integration/release/KiCad-Git-Integration-v${TAG#kicad-git-integration-v}.zip"
               TITLE="KiCad Git Integration ${TAG#kicad-git-integration-v}"
               NOTES="Modified KiCad Git integration plugin package. See the repository's KiCad-Git-Integration/README.md for installation instructions."
               ;;
