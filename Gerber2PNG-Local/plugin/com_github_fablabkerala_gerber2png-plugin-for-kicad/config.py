@@ -5,7 +5,7 @@ import pcbnew
 frontendUrl = 'http://127.0.0.1:4172/'
 frontendOrigin = 'http://127.0.0.1:4172'
 frontendServerPython = os.environ.get(
-    'GERBER2PNG_PYTHON', r'C:\Program Files\Gerber2PNG Local Server\python.exe'
+    'GERBER2PNG_PYTHON', r'C:\Program Files\Gerber2PNG Local Server\Python\python.exe'
 )
 frontendServerRoot = os.environ.get(
     'GERBER2PNG_SERVER_ROOT', r'C:\Program Files\Gerber2PNG Local Server'

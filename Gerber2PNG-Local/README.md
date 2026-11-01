@@ -5,14 +5,14 @@ This package combines Jim's modified Gerber2PNG KiCad action plugin with a local
 ## Install from the release ZIP
 
 1. Extract the ZIP to a regular folder.
-2. Run `Install-Gerber2PNG-Local.cmd` and approve the Windows administrator prompt. The installer asks for the KiCad `3rdparty\plugins` folder and the Python 3 executable.
-3. Select the Python installation you intend KiCad to use. Python 3.10 or newer is required. The installer suggests Python found on `PATH`; the MSYS2 UCRT64 Python at `C:\msys64\ucrt64\bin\python.exe` is also supported.
+2. Run `Install-Gerber2PNG-Local.cmd` and approve the Windows administrator prompt. The installer asks for the KiCad `3rdparty\plugins` folder.
+3. The installer installs its bundled 64-bit Python 3.13 runtime for the local service. You do not need to install Python separately.
 4. Wait for the installer to confirm that the local page answers at `http://127.0.0.1:4172/`, then restart KiCad.
 5. In PCB Editor, use the Gerber2PNG toolbar action. The plugin exports the board files and opens the local app.
 
 The service is installed as the Windows service `Gerber2PNGLocalServer` and starts automatically. It runs under the Windows Local System account. The installer backs up an existing copy of the plugin folder with a timestamp before installing the new files. The service log files are in `C:\Program Files\Gerber2PNG Local Server\logs`.
 
-The installer sets the machine environment variables `GERBER2PNG_SERVER_ROOT` and `GERBER2PNG_PYTHON` for the plugin. Restart KiCad after installation so it reads those values.
+The installer sets the machine environment variables `GERBER2PNG_SERVER_ROOT` and `GERBER2PNG_PYTHON` for the plugin. The bundled Python runtime is installed under `C:\Program Files\Gerber2PNG Local Server\Python`. Restart KiCad after installation so it reads those values.
 
 ## Remove
 

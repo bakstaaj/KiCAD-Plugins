@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$InstallRoot = "$env:ProgramFiles\Gerber2PNG Local Server",
-    [string]$PluginDirectory,
-    [string]$PythonExe
+    [string]$PluginDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,16 +19,6 @@ function Select-Folder([string]$Description, [string]$InitialPath) {
     return $dialog.SelectedPath
 }
 
-function Select-Python([string]$InitialPath) {
-    Add-Type -AssemblyName System.Windows.Forms
-    $dialog = New-Object System.Windows.Forms.OpenFileDialog
-    $dialog.Title = 'Select the Python 3 executable for the local service'
-    $dialog.Filter = 'Python executable (python.exe)|python.exe|All files (*.*)|*.*'
-    if ($InitialPath -and (Test-Path -LiteralPath $InitialPath)) { $dialog.FileName = $InitialPath }
-    if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { throw 'Installation cancelled.' }
-    return $dialog.FileName
-}
-
 function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     return ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -39,7 +28,6 @@ if (-not (Test-Administrator)) {
     $argumentLine = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
     if ($InstallRoot) { $argumentLine += @('-InstallRoot', "`"$InstallRoot`"") }
     if ($PluginDirectory) { $argumentLine += @('-PluginDirectory', "`"$PluginDirectory`"") }
-    if ($PythonExe) { $argumentLine += @('-PythonExe', "`"$PythonExe`"") }
     Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $argumentLine
     exit
 }
@@ -47,8 +35,9 @@ if (-not (Test-Administrator)) {
 $nssmSource = Join-Path $PackageRoot 'NSSM\win64\nssm.exe'
 $serverSource = Join-Path $PackageRoot 'Service\server.py'
 $distSource = Join-Path $PackageRoot 'Service\dist'
+$pythonArchive = Join-Path $PackageRoot 'PythonRuntime\python-3.13.17-embed-amd64.zip'
 $pluginSource = Join-Path (Join-Path $PackageRoot 'KiCadPlugin') $PluginFolderName
-foreach ($required in @($nssmSource, $serverSource, (Join-Path $distSource 'index.html'), (Join-Path $pluginSource '__init__.py'))) {
+foreach ($required in @($nssmSource, $serverSource, $pythonArchive, (Join-Path $distSource 'index.html'), (Join-Path $pluginSource '__init__.py'))) {
     if (-not (Test-Path -LiteralPath $required)) { throw "Package file is missing: $required" }
 }
 
@@ -63,15 +52,6 @@ if (-not $PluginDirectory) {
     $PluginDirectory = Select-Folder 'Select KiCad 10.0\3rdparty\plugins' $suggestion
 }
 if (-not (Test-Path -LiteralPath $PluginDirectory)) { New-Item -ItemType Directory -Path $PluginDirectory -Force | Out-Null }
-
-if (-not $PythonExe) {
-    $pythonCommand = Get-Command python.exe -ErrorAction SilentlyContinue
-    $suggestion = if ($pythonCommand) { $pythonCommand.Source } else { 'C:\msys64\ucrt64\bin\python.exe' }
-    $PythonExe = Select-Python $suggestion
-}
-if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) { throw "Python executable not found: $PythonExe" }
-$pythonVersion = & $PythonExe -c 'import sys; print("%d.%d" % sys.version_info[:2])'
-if ($LASTEXITCODE -ne 0 -or [version]$pythonVersion -lt [version]'3.10') { throw 'Python 3.10 or newer is required.' }
 
 $portOwner = Get-NetTCPConnection -State Listen -LocalPort 4172 -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($portOwner) {
@@ -100,6 +80,13 @@ if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
 New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $InstallRoot 'dist') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $InstallRoot 'logs') -Force | Out-Null
+$pythonDir = Join-Path $InstallRoot 'Python'
+New-Item -ItemType Directory -Path $pythonDir -Force | Out-Null
+Expand-Archive -LiteralPath $pythonArchive -DestinationPath $pythonDir -Force
+$PythonExe = Join-Path $pythonDir 'python.exe'
+if (-not (Test-Path -LiteralPath $PythonExe -PathType Leaf)) { throw 'The bundled Python runtime did not extract correctly.' }
+$pythonVersion = & $PythonExe -c 'import sys; print("%d.%d" % sys.version_info[:2])'
+if ($LASTEXITCODE -ne 0 -or [version]$pythonVersion -lt [version]'3.10') { throw 'The bundled Python runtime failed its version check.' }
 Copy-Item -LiteralPath $serverSource -Destination (Join-Path $InstallRoot 'server.py') -Force
 Copy-Item -LiteralPath $nssmSource -Destination (Join-Path $InstallRoot 'nssm.exe') -Force
 Copy-Item -Path (Join-Path $distSource '*') -Destination (Join-Path $InstallRoot 'dist') -Recurse -Force
@@ -116,7 +103,6 @@ if (-not (Test-Path -LiteralPath (Join-Path $InstallRoot 'environment-backup.jso
 [Environment]::SetEnvironmentVariable('GERBER2PNG_PYTHON', $PythonExe, 'Machine')
 
 $nssm = Join-Path $InstallRoot 'nssm.exe'
-$pythonDir = Split-Path -Parent $PythonExe
 & $nssm install $ServiceName $PythonExe (Join-Path $InstallRoot 'server.py')
 if ($LASTEXITCODE -ne 0) { throw 'NSSM could not register the local service.' }
 & $nssm set $ServiceName AppDirectory $InstallRoot

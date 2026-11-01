@@ -3,7 +3,7 @@ name: Publish Gerber2PNG Local release
 on:
   push:
     tags:
-      - v1.0.0
+      - v1.1.0
 
 permissions:
   contents: write
@@ -19,6 +19,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "Gerber2PNG Local for KiCad ${GITHUB_REF_NAME#v}" \
+              --notes "Windows installer for the modified KiCad plugin and local Gerber2PNG service. The installer includes a standalone Python runtime. Extract the ZIP and run Install-Gerber2PNG-Local.cmd as administrator, then select the KiCad plugins folder and restart KiCad."
+          fi
           gh release upload "${GITHUB_REF_NAME}" \
-            "Gerber2PNG-Local/release/Gerber2PNG-Local-v1.0.0-Windows.zip" \
+            "Gerber2PNG-Local/release/Gerber2PNG-Local-v1.1.0-Windows.zip" \
             --clobber
