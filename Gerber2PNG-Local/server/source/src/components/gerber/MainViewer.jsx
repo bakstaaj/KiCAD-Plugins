@@ -15,7 +15,7 @@ const viewerControlButtonClass = "group flex h-6 w-6 items-center justify-center
 const viewerTooltipClass = "pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-slate-200/90 bg-white/95 px-2 py-1 text-[10px] font-medium tracking-[0.01em] text-slate-700 opacity-0 shadow-[0_10px_24px_rgba(15,23,42,0.12)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:opacity-100 dark:border-slate-700/80 dark:bg-slate-900/95 dark:text-slate-100 dark:shadow-[0_14px_28px_rgba(2,6,23,0.45)]";
 
 const MainView = () => {
-    const { setTopStack, setBottomStack, setFullLayers } = useGerberLayer();
+    const { setTopStack, setBottomStack, setFullLayers, setDrillFiles } = useGerberLayer();
     const { setLayerType, setStackConfig } = useGerberSettings();
     const { mainSvg, setMainSvg, handleReset } = useGerberView();
     const { theme } = useApp();
@@ -40,6 +40,17 @@ const MainView = () => {
     };
 
     const handleInputFiles = (files) => {
+        const fileList = Array.from(files || []);
+        Promise.all(fileList.map(async (file) => {
+            const name = file.name.toLowerCase();
+            if (!/\.(drl|xln|exc|txt)$/.test(name)) return null;
+            const content = await file.text();
+            if (!/\bM48\b|\bMETRIC\b|\bINCH\b|^T\d+/im.test(content)) return null;
+            return { name: file.name, content };
+        })).then((items) => setDrillFiles(items.filter(Boolean))).catch((error) => {
+            console.error("Failed to read drill files", error);
+            setDrillFiles([]);
+        });
         convertToSvg(files, setTopStack, setBottomStack, setFullLayers, setMainSvg, setStackConfig).then(() => {
             setLayerType('original');
             dropAreaRef.current.style.display = 'none';

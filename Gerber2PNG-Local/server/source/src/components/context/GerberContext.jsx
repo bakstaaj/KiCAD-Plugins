@@ -29,6 +29,7 @@ export const GerberProvider = ({ children }) => {
     const [topstack, setTopStack] = useState({ id: null, svg: null });
     const [bottomstack, setBottomStack] = useState({ id: null, svg: null });
     const [fullLayers, setFullLayers] = useState(null);
+    const [drillFiles, setDrillFiles] = useState([]);
 
     const [boardSide, setBoardSide] = useState("top");
     const [layerType, setLayerType] = useState(null);
@@ -217,6 +218,7 @@ export const GerberProvider = ({ children }) => {
         setTopStack({ id: null, svg: null });
         setBottomStack({ id: null, svg: null });
         setFullLayers(null);
+        setDrillFiles([]);
         setLoader(false);
 
         setBoardSide("top");
@@ -236,7 +238,9 @@ export const GerberProvider = ({ children }) => {
         setBottomStack,
         fullLayers,
         setFullLayers,
-    }), [bottomstack, fullLayers, topstack]);
+        drillFiles,
+        setDrillFiles,
+    }), [bottomstack, drillFiles, fullLayers, topstack]);
 
     const settingValues = useMemo(() => ({
         boardSide,

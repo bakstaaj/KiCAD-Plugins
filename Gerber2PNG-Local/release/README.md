@@ -9,6 +9,8 @@ This installs the `Gerber2PNGLocalServer` Windows service and the modified Gerbe
 
 After loading Gerber files, use **Stencil DXF** in the output panel to export the top or bottom solder-paste apertures together with the board edge. The DXF uses millimeters and separates the geometry onto `STENCIL_APERTURES` and `BOARD_EDGE` layers.
 
+Use **Drill G-code** to convert loaded KiCad Excellon drill files into one NC file. Coordinates use top-side orientation, with the lower-left of the Edge.Cuts outline at X0 Y0. Drill tools are sorted from smallest to largest and each size has a manual M0 tool-change pause. The dialog lets you set drill depth, safe Z, tool-change Z, plunge feed, spindle speed, and dwell. Routed slots encoded with Excellon G85 are not supported.
+
 Run `Uninstall-Gerber2PNG-Local.cmd` to remove the service. It asks before deleting the plugin and service files; timestamped backups of any previous plugin installation are kept.
 
 If installation reports that port 4172 is in use, close the other program using that port and run the installer again. See the service error log if Windows reports that the service failed to start.

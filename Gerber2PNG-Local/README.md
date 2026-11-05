@@ -2,6 +2,8 @@
 
 This package combines Jim's modified Gerber2PNG KiCad action plugin with a local build of the Gerber2PNG web application and its local LightBurn bridge. The web app listens only on `127.0.0.1:4172`.
 
+The local app can export loaded KiCad Excellon drill files as NC G-code. It uses the top-side orientation and moves the board Edge.Cuts lower-left corner to X0 Y0. Holes are grouped by drill diameter in ascending order, with a manual M0 tool-change pause for each size. Set safe Z, drill depth, plunge feed, spindle, and tool-change height in the export dialog. Routed slots encoded with Excellon G85 are not currently supported.
+
 ## Install from the release ZIP
 
 1. Extract the ZIP to a regular folder.

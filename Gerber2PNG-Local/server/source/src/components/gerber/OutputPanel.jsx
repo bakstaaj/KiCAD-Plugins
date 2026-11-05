@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRightEndOnRectangleIcon,
   ArrowDownTrayIcon,
+  Cog6ToothIcon,
   FolderArrowDownIcon,
   Squares2X2Icon,
   TrashIcon,
@@ -20,12 +21,13 @@ import OutlineTabsModal from "./OutlineTabsModal";
 import PngPreviewModal from "./PngPreviewModal";
 import LightBurnExportModal from "./LightBurnExportModal";
 import { createStencilDxf } from "../../utils/dxf/stencilDxf";
+import DrillGcodeModal from "./DrillGcodeModal";
 import toast from "react-hot-toast";
 
 const OutputPanel = () => {
   const { pngFiles, setPngFiles, outlineTabPreset, setOutlineTabPreset } = useApp();
   const { doubleSide, outlineToolWidth, stackConfig } = useGerberSettings();
-  const { topstack, bottomstack } = useGerberLayer();
+  const { topstack, bottomstack, drillFiles } = useGerberLayer();
 
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showModsPanel, setShowModsPanel] = useState(false);
@@ -36,6 +38,7 @@ const OutputPanel = () => {
   const [previewPng, setPreviewPng] = useState(null);
   const [lightBurnPng, setLightBurnPng] = useState(null);
   const [showStencilModal, setShowStencilModal] = useState(false);
+  const [showDrillGcodeModal, setShowDrillGcodeModal] = useState(false);
 
   const exportStencilDxf = (side) => {
     const stack = side === "top" ? topstack : bottomstack;
@@ -333,6 +336,20 @@ const OutputPanel = () => {
                 <ArrowDownTrayIcon width={14} />
                 Stencil DXF
               </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                disabled={!drillFiles?.length || !topstack?.svg}
+                onClick={() => setShowDrillGcodeModal(true)}
+                title={drillFiles?.length ? "Export Excellon drill hits as NC G-code" : "Upload a KiCad Excellon drill file (.drl)"}
+                className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition ${
+                  drillFiles?.length && topstack?.svg
+                    ? "text-gray-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                    : "text-gray-400 cursor-not-allowed dark:text-slate-500"
+                }`}
+              >
+                <Cog6ToothIcon width={14} />
+                Drill G-code
+              </motion.button>
             </div>
 
             {/* DELETE */}
@@ -446,6 +463,14 @@ const OutputPanel = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DrillGcodeModal
+        open={showDrillGcodeModal}
+        onClose={() => setShowDrillGcodeModal(false)}
+        boardId={topstack?.id}
+        drillFiles={drillFiles}
+        topSvg={topstack?.svg}
+      />
 
       <AnimatePresence>
         {showDeleteConfirm && (
