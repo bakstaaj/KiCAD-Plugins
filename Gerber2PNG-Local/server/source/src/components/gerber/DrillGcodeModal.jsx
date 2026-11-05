@@ -7,8 +7,8 @@ const initialSettings = {
   depth: "-2.1",
   safeZ: "3.0",
   toolChangeZ: "25.0",
-  plunge: "300",
-  spindle: "900",
+  plunge: "100",
+  spindle: "10000",
   dwell: "3",
 };
 
