@@ -286,10 +286,24 @@ const OutputPanel = () => {
 
         {/* ACTION STRIP */}
         <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40">
-          <div className="flex items-center justify-between bg-white rounded-xl px-1 py-1 border border-indigo-100 dark:bg-slate-950/50 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-1 bg-white rounded-xl px-1 py-1 border border-indigo-100 dark:bg-slate-950/50 dark:border-slate-800">
 
             {/* LEFT */}
-            <div className="flex items-center gap-1">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                disabled={!drillFiles?.length || !topstack?.svg}
+                onClick={() => setShowDrillGcodeModal(true)}
+                title={drillFiles?.length ? "Export Excellon drill hits as NC G-code" : "Upload a KiCad Excellon drill file (.drl)"}
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1.5 text-xs font-semibold rounded-lg transition ${
+                  drillFiles?.length && topstack?.svg
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-slate-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500"
+                }`}
+              >
+                <Cog6ToothIcon width={14} />
+                Drill G-code
+              </motion.button>
               <motion.button
                 whileTap={{ scale: hasFiles ? 0.96 : 1 }}
                 disabled={!hasFiles}
@@ -335,20 +349,6 @@ const OutputPanel = () => {
               >
                 <ArrowDownTrayIcon width={14} />
                 Stencil DXF
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                disabled={!drillFiles?.length || !topstack?.svg}
-                onClick={() => setShowDrillGcodeModal(true)}
-                title={drillFiles?.length ? "Export Excellon drill hits as NC G-code" : "Upload a KiCad Excellon drill file (.drl)"}
-                className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-lg transition ${
-                  drillFiles?.length && topstack?.svg
-                    ? "text-gray-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                    : "text-gray-400 cursor-not-allowed dark:text-slate-500"
-                }`}
-              >
-                <Cog6ToothIcon width={14} />
-                Drill G-code
               </motion.button>
             </div>
 

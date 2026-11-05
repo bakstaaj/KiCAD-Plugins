@@ -113,6 +113,7 @@ export function generateDrillGcode(drillFiles, outlinePath, settings) {
     const minX = bounds.x;
     const minY = bounds.y;
     const maxX = bounds.x + bounds.width;
+    const maxY = bounds.y + bounds.height;
     const tolerance = Math.max(bounds.width, bounds.height) * 0.01 + 0.1;
     const outside = [...unique.values()].filter((hit) => hit.x < minX - tolerance || hit.x > maxX + tolerance || hit.y < minY - tolerance || hit.y > maxY + tolerance);
     if (outside.length) {
