@@ -170,7 +170,8 @@ export const GerberProvider = ({ children }) => {
                     updateSvg(svg, option, setup, machine, topstack, isDoubleside);
                     handleColorChange({ color: setup.color, id: topstack.id, svgs: [svg] });
 
-                    const newUrl = await generatePNG(svg, isDoubleside, setup.id, setup.canvas, setup.color, isCubiko);
+                    const flipAboutYAxis = isCubiko || setup.id.includes("bottomlayer");
+                    const newUrl = await generatePNG(svg, isDoubleside, setup.id, setup.canvas, setup.color, flipAboutYAxis);
                     const directory = option.includes("top") ? "toplayer" : option.includes("bottom") ? "bottomlayer" : "others";
 
                     nextPngFiles.push({
@@ -189,7 +190,8 @@ export const GerberProvider = ({ children }) => {
 
             const targetSvg = mainSvg.svg === fullLayers ? topstack.svg.cloneNode(true) : mainSvg.svg.cloneNode(true);
 
-            const blob = await generatePNG(targetSvg, isDoubleside, mainSvg.id, canvasBg, layerType);
+            const flipAboutYAxis = isCubiko || mainSvg.svg === bottomstack.svg || mainSvg.id?.includes("bottom");
+            const blob = await generatePNG(targetSvg, isDoubleside, mainSvg.id, canvasBg, layerType, Boolean(flipAboutYAxis));
             const directory = method.includes("top") ? "toplayer" : method.includes("bottom") ? "bottomlayer" : "others";
             
             const jobs = ["trace", "drill", "outline"];

@@ -4,6 +4,8 @@ This package combines Jim's modified Gerber2PNG KiCad action plugin with a local
 
 The local app can export loaded KiCad Excellon drill files as NC G-code. It uses the top-side orientation and moves the board Edge.Cuts lower-left corner to X0 Y0. Holes are grouped by drill diameter in ascending order, with a manual M0 tool-change pause for each size. Set safe Z, drill depth, plunge feed, spindle, and tool-change height in the export dialog. Routed slots encoded with Excellon G85 are not currently supported.
 
+In normal PNG generation, bottom-side layer outputs are mirrored horizontally about the Y axis while top-side outputs are unchanged. The existing Cubiko-specific flip behavior is retained.
+
 ## Install from the release ZIP
 
 1. Extract the ZIP to a regular folder.

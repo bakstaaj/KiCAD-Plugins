@@ -11,6 +11,8 @@ After loading Gerber files, use **Stencil DXF** in the output panel to export th
 
 Use **Drill G-code** to convert loaded KiCad Excellon drill files into one NC file. Coordinates use top-side orientation, with the lower-left of the Edge.Cuts outline at X0 Y0. Drill tools are sorted from smallest to largest and each size has a manual M0 tool-change pause. The dialog lets you set drill depth, safe Z, tool-change Z, plunge feed, spindle speed, and dwell. Routed slots encoded with Excellon G85 are not supported.
 
+In normal PNG generation, bottom-side layer exports are mirrored horizontally about the Y axis while top-side exports are unchanged. The existing Cubiko-specific flip behavior is retained.
+
 Run `Uninstall-Gerber2PNG-Local.cmd` to remove the service. It asks before deleting the plugin and service files; timestamped backups of any previous plugin installation are kept.
 
 If installation reports that port 4172 is in use, close the other program using that port and run the installer again. See the service error log if Windows reports that the service failed to start.
